@@ -1,6 +1,6 @@
 # PAnalysis
 
-PAnalysis 是一个独立桌面抓包分析软件，当前阶段重点聚焦 `SIP` 和 `RTP`，用于离线分析 `pcap/pcapng` 抓包文件，不做实时抓包。
+PAnalysis 是一个独立桌面抓包分析软件，当前阶段重点聚焦 `SIP` 和 `RTP`，用于离线分析 `pcap/pcapng` 抓包文件，不做实时抓包。纯AI制作，莫得感情。
 
 当前版本已经具备：
 
