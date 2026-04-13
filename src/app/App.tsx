@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { AnalysisResult, AppBootstrapData } from "../../shared/types";
+import { LANGUAGE_STORAGE_KEY, type AppLanguage, uiCopy } from "./i18n";
 
 const fallbackBootstrap: AppBootstrapData = {
   appName: "PAnalysis",
@@ -9,11 +10,24 @@ const fallbackBootstrap: AppBootstrapData = {
 };
 
 export function App() {
+  const [language, setLanguage] = useState<AppLanguage>("zh-CN");
   const [bootstrap, setBootstrap] = useState<AppBootstrapData>(fallbackBootstrap);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isElectronRuntime, setIsElectronRuntime] = useState(false);
+  const copy = uiCopy[language];
+
+  useEffect(() => {
+    const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (savedLanguage === "zh-CN" || savedLanguage === "en") {
+      setLanguage(savedLanguage);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  }, [language]);
 
   useEffect(() => {
     if (!window.panalysis) {
@@ -28,7 +42,7 @@ export function App() {
 
   async function handleOpenFile() {
     if (!window.panalysis) {
-      setErrorMessage("当前是浏览器预览模式。请使用 Electron 窗口，或继续执行 `pnpm dev` 后在弹出的桌面窗口中操作。");
+      setErrorMessage(copy.browserPreviewError);
       return;
     }
 
@@ -52,28 +66,43 @@ export function App() {
     <main className="app-shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">Offline Packet Analysis Studio</p>
+          <p className="eyebrow">{copy.heroEyebrow}</p>
           <h1>{bootstrap.appName}</h1>
-          <p className="hero-copy">
-            当前聚焦 SIP 呼叫定位与媒体质量分析，支持离线导入 pcap/pcapng，
-            输出呼叫状态、失败原因、RTP 流跟踪和异常提示。
-          </p>
+          <p className="hero-copy">{copy.heroCopy}</p>
           {!isElectronRuntime ? (
-            <p className="runtime-banner">
-              当前是浏览器预览模式，只显示界面骨架。要打开抓包并执行真实分析，请在 `pnpm dev` 启动后使用 Electron 桌面窗口。
-            </p>
+            <p className="runtime-banner">{copy.runtimeBanner}</p>
           ) : null}
         </div>
-        <button className="primary-button" onClick={handleOpenFile} disabled={isOpening}>
-          {isOpening ? "正在打开..." : "打开抓包文件"}
-        </button>
+        <div className="hero-actions">
+          <div className="language-switch" aria-label={copy.languageLabel}>
+            <button
+              className="language-button"
+              data-active={language === "zh-CN"}
+              onClick={() => setLanguage("zh-CN")}
+              type="button"
+            >
+              中文
+            </button>
+            <button
+              className="language-button"
+              data-active={language === "en"}
+              onClick={() => setLanguage("en")}
+              type="button"
+            >
+              English
+            </button>
+          </div>
+          <button className="primary-button" onClick={handleOpenFile} disabled={isOpening}>
+            {isOpening ? copy.openingCaptureFile : copy.openCaptureFile}
+          </button>
+        </div>
       </section>
 
       {errorMessage ? <section className="error-banner">{errorMessage}</section> : null}
 
       <section className="overview-grid">
         <article className="panel">
-          <span className="panel-label">协议范围</span>
+          <span className="panel-label">{copy.protocolScope}</span>
           <div className="protocol-chip-row">
             {bootstrap.supportedProtocols.map((protocol) => (
               <span className="protocol-chip" key={protocol}>
@@ -81,15 +110,13 @@ export function App() {
               </span>
             ))}
           </div>
-          <p className="muted">支持格式：{bootstrap.supportedFormats.join(" / ")}</p>
+          <p className="muted">{copy.supportedFormats}: {bootstrap.supportedFormats.join(" / ")}</p>
         </article>
 
         <article className="panel">
-          <span className="panel-label">当前阶段</span>
-          <h2>SIP Focus</h2>
-          <p className="muted">
-            SIP 解析、错误归因和 RTP 跟踪已经接入，OMCI 与 CTC OAM 先不在界面展示。
-          </p>
+          <span className="panel-label">{copy.currentStage}</span>
+          <h2>{copy.stageTitle}</h2>
+          <p className="muted">{copy.stageDescription}</p>
         </article>
       </section>
 
@@ -97,37 +124,37 @@ export function App() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <span className="panel-label">分析摘要</span>
-              <h2>{analysis?.capture.name ?? "尚未导入抓包文件"}</h2>
+              <span className="panel-label">{copy.analysisSummary}</span>
+              <h2>{analysis?.capture.name ?? copy.noCaptureImported}</h2>
             </div>
             <span className="version-tag">v{bootstrap.version}</span>
           </div>
           {analysis ? (
             <div className="summary-stack">
               <p className="muted">
-                路径：<code>{analysis.capture.path}</code>
+                {copy.pathLabel}: <code>{analysis.capture.path}</code>
               </p>
               <p className="muted">
-                格式：<strong>{analysis.capture.format}</strong>，大小：
-                <strong>{analysis.capture.sizeInBytes.toLocaleString()}</strong> bytes
+                {copy.formatLabel}: <strong>{analysis.capture.format}</strong>，{copy.sizeLabel}：
+                <strong>{analysis.capture.sizeInBytes.toLocaleString()}</strong> {copy.bytes}
               </p>
               {analysis.sip ? (
                 <div className="stats-row">
                   <div className="stat-card">
                     <strong>{analysis.sip.callCount}</strong>
-                    <span>Calls</span>
+                    <span>{copy.calls}</span>
                   </div>
                   <div className="stat-card">
                     <strong>{analysis.sip.totalMessages}</strong>
-                    <span>SIP Messages</span>
+                    <span>{copy.sipMessages}</span>
                   </div>
                   <div className="stat-card">
                     <strong>{analysis.sip.rtpStreams.length}</strong>
-                    <span>RTP Streams</span>
+                    <span>{copy.rtpStreams}</span>
                   </div>
                   <div className="stat-card">
                     <strong>{analysis.sip.rtcpReports.length}</strong>
-                    <span>RTCP Reports</span>
+                    <span>{copy.rtcpReports}</span>
                   </div>
                 </div>
               ) : null}
@@ -138,24 +165,22 @@ export function App() {
               </div>
             </div>
           ) : (
-            <p className="empty-state">
-              先导入一个抓包文件，后续这里会展示协议统计、异常摘要和分析建议。
-            </p>
+            <p className="empty-state">{copy.summaryEmpty}</p>
           )}
         </article>
 
         <article className="panel">
-          <span className="panel-label">SIP 状态</span>
+          <span className="panel-label">{copy.sipStatus}</span>
           {analysis?.summaries.map((summary) => (
             <div className="protocol-card" key={summary.protocol}>
               <div className="protocol-card-header">
                 <h3>{summary.protocol}</h3>
-                <span data-status={summary.status}>{summary.status}</span>
+                <span data-status={summary.status}>{summary.status === "ready" ? copy.ready : copy.planned}</span>
               </div>
-              <p>{summary.note}</p>
-              <small>报文数：{summary.packets}</small>
+              <p>{summary.protocol === "SIP" ? copy.protocolStatusNote : summary.note}</p>
+              <small>{copy.packetCount}: {summary.packets}</small>
             </div>
-          )) ?? <p className="empty-state">导入 SIP 抓包后，这里会显示协议状态。</p>}
+          )) ?? <p className="empty-state">{copy.protocolStatusEmpty}</p>}
         </article>
       </section>
 
@@ -163,8 +188,8 @@ export function App() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <span className="panel-label">错误归因</span>
-              <h2>SIP Issues</h2>
+              <span className="panel-label">{copy.issueAttribution}</span>
+              <h2>{copy.sipIssues}</h2>
             </div>
           </div>
           <div className="issue-list">
@@ -172,18 +197,18 @@ export function App() {
               <div className="issue-card" key={`${issue.title}-${index}`} data-severity={issue.severity}>
                 <strong>{issue.title}</strong>
                 <p>{issue.detail}</p>
-                {issue.callId ? <small>Call-ID: {issue.callId}</small> : null}
+                {issue.callId ? <small>{copy.callId}: {issue.callId}</small> : null}
               </div>
             ))}
-            {!analysis?.sip?.issues.length ? <p className="empty-state">暂未发现明显 SIP 异常。</p> : null}
+            {!analysis?.sip?.issues.length ? <p className="empty-state">{copy.noSipIssues}</p> : null}
           </div>
         </article>
 
         <article className="panel">
           <div className="panel-header">
             <div>
-              <span className="panel-label">媒体跟踪</span>
-              <h2>RTP Streams</h2>
+              <span className="panel-label">{copy.mediaTracking}</span>
+              <h2>{copy.rtpStreams}</h2>
             </div>
           </div>
           <div className="issue-list">
@@ -192,11 +217,11 @@ export function App() {
                   <strong>{stream.source} {"->"} {stream.destination}</strong>
                   <p>{stream.note}</p>
                   <small>
-                    packets {stream.packetCount} / lost {stream.estimatedLostPackets} / out-of-order {stream.outOfOrderPackets} / jitter {stream.jitterMs ?? 0} ms
+                    {copy.packets} {stream.packetCount} / {copy.lost} {stream.estimatedLostPackets} / {copy.outOfOrder} {stream.outOfOrderPackets} / {copy.jitter} {stream.jitterMs ?? 0} ms
                   </small>
                 </div>
             ))}
-            {!analysis?.sip?.rtpStreams.length ? <p className="empty-state">暂未识别到 RTP 流。</p> : null}
+            {!analysis?.sip?.rtpStreams.length ? <p className="empty-state">{copy.noRtpStreams}</p> : null}
           </div>
         </article>
       </section>
@@ -205,8 +230,8 @@ export function App() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <span className="panel-label">SDP 变化</span>
-              <h2>SDP Diff</h2>
+              <span className="panel-label">{copy.sdpChanges}</span>
+              <h2>{copy.sdpDiff}</h2>
             </div>
           </div>
           <div className="issue-list">
@@ -215,19 +240,19 @@ export function App() {
                 <strong>{diff.callId}</strong>
                 <p>{diff.summary}</p>
                 <small>
-                  added [{diff.addedCodecs.join(", ") || "-"}] / removed [{diff.removedCodecs.join(", ") || "-"}]
+                  {copy.added} [{diff.addedCodecs.join(", ") || copy.unknown}] / {copy.removed} [{diff.removedCodecs.join(", ") || copy.unknown}]
                 </small>
               </div>
             ))}
-            {!analysis?.sip?.sdpDiffs.length ? <p className="empty-state">暂未识别到可比较的 SDP Offer/Answer。</p> : null}
+            {!analysis?.sip?.sdpDiffs.length ? <p className="empty-state">{copy.noSdpDiffs}</p> : null}
           </div>
         </article>
 
         <article className="panel">
           <div className="panel-header">
             <div>
-              <span className="panel-label">RTCP 观测</span>
-              <h2>RTCP Reports</h2>
+              <span className="panel-label">{copy.rtcpObservation}</span>
+              <h2>{copy.rtcpReports}</h2>
             </div>
           </div>
           <div className="issue-list">
@@ -236,11 +261,11 @@ export function App() {
                 <strong>{report.packetType} {report.source} {"->"} {report.destination}</strong>
                 <p>{report.note}</p>
                 <small>
-                  lost {report.fractionLost ?? "-"} / cumulative {report.cumulativeLost ?? "-"} / jitter {report.interarrivalJitter ?? "-"}
+                  {copy.lost} {report.fractionLost ?? copy.unknown} / {copy.cumulative} {report.cumulativeLost ?? copy.unknown} / {copy.jitter} {report.interarrivalJitter ?? copy.unknown}
                 </small>
               </div>
             ))}
-            {!analysis?.sip?.rtcpReports.length ? <p className="empty-state">暂未识别到 RTCP 报告。</p> : null}
+            {!analysis?.sip?.rtcpReports.length ? <p className="empty-state">{copy.noRtcpReports}</p> : null}
           </div>
         </article>
       </section>
@@ -248,7 +273,7 @@ export function App() {
       <section className="panel">
         <div className="panel-header">
           <div>
-            <span className="panel-label">事务诊断</span>
+            <span className="panel-label">{copy.transactionDiagnostics}</span>
             <h2>SIP Transactions</h2>
           </div>
         </div>
@@ -256,12 +281,12 @@ export function App() {
           <table>
             <thead>
               <tr>
-                <th>Method</th>
-                <th>Call-ID</th>
-                <th>Status</th>
-                <th>Final Code</th>
-                <th>Latency</th>
-                <th>Diagnosis</th>
+                <th>{copy.methods}</th>
+                <th>{copy.callId}</th>
+                <th>{copy.status}</th>
+                <th>{copy.finalCode}</th>
+                <th>{copy.latency}</th>
+                <th>{copy.diagnosis}</th>
               </tr>
             </thead>
             <tbody>
@@ -270,21 +295,21 @@ export function App() {
                   <td>{transaction.method}</td>
                   <td>{transaction.callId}</td>
                   <td>{transaction.finalStatus}</td>
-                  <td>{transaction.finalCode ?? "-"}</td>
-                  <td>{transaction.latencyMs ?? "-"}</td>
+                  <td>{transaction.finalCode ?? copy.unknown}</td>
+                  <td>{transaction.latencyMs ?? copy.unknown}</td>
                   <td>{transaction.diagnosis}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {!analysis?.sip?.transactions.length ? <p className="empty-state">导入抓包后，这里会出现事务级诊断。</p> : null}
+          {!analysis?.sip?.transactions.length ? <p className="empty-state">{copy.noTransactions}</p> : null}
         </div>
       </section>
 
       <section className="panel">
         <div className="panel-header">
           <div>
-            <span className="panel-label">时序图</span>
+            <span className="panel-label">{copy.sequenceDiagram}</span>
             <h2>Call-ID Sequence</h2>
           </div>
         </div>
@@ -305,14 +330,14 @@ export function App() {
               </div>
             </div>
           ))}
-          {!analysis?.sip?.sequenceDiagrams.length ? <p className="empty-state">导入抓包后，这里会出现 Call-ID 级时序图。</p> : null}
+          {!analysis?.sip?.sequenceDiagrams.length ? <p className="empty-state">{copy.noSequences}</p> : null}
         </div>
       </section>
 
       <section className="panel">
         <div className="panel-header">
           <div>
-            <span className="panel-label">呼叫汇总</span>
+            <span className="panel-label">{copy.dialogSummary}</span>
             <h2>SIP Dialogs</h2>
           </div>
         </div>
@@ -320,33 +345,33 @@ export function App() {
           <table>
             <thead>
               <tr>
-                <th>Call-ID</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Messages</th>
-                <th>Failure Reason</th>
+                <th>{copy.callId}</th>
+                <th>{copy.methods}</th>
+                <th>{copy.status}</th>
+                <th>{copy.messages}</th>
+                <th>{copy.failureReason}</th>
               </tr>
             </thead>
             <tbody>
               {(analysis?.sip?.dialogs ?? []).map((dialog) => (
                 <tr key={dialog.callId}>
                   <td>{dialog.callId}</td>
-                  <td>{dialog.method ?? "-"}</td>
+                  <td>{dialog.method ?? copy.unknown}</td>
                   <td>{dialog.status}</td>
                   <td>{dialog.messageCount}</td>
-                  <td>{dialog.failureReason ?? (dialog.diagnostics.join(" ; ") || "-")}</td>
+                  <td>{dialog.failureReason ?? (dialog.diagnostics.join(" ; ") || copy.unknown)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {!analysis?.sip?.dialogs.length ? <p className="empty-state">导入抓包后，这里会出现呼叫级汇总。</p> : null}
+          {!analysis?.sip?.dialogs.length ? <p className="empty-state">{copy.noDialogs}</p> : null}
         </div>
       </section>
 
       <section className="panel">
         <div className="panel-header">
           <div>
-            <span className="panel-label">报文列表</span>
+            <span className="panel-label">{copy.packetTimeline}</span>
             <h2>Packet Timeline</h2>
           </div>
         </div>
@@ -355,10 +380,10 @@ export function App() {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Time</th>
-                <th>Protocol</th>
-                <th>Summary</th>
-                <th>Length</th>
+                <th>{copy.time}</th>
+                <th>{copy.protocol}</th>
+                <th>{copy.summary}</th>
+                <th>{copy.length}</th>
               </tr>
             </thead>
             <tbody>
@@ -373,7 +398,7 @@ export function App() {
               ))}
             </tbody>
           </table>
-          {!analysis && <p className="empty-state">导入抓包后，这里会出现逐包时间线。</p>}
+          {!analysis && <p className="empty-state">{copy.noPackets}</p>}
         </div>
       </section>
     </main>

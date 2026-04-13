@@ -90,6 +90,37 @@ code {
   color: #fde68a;
 }
 
+.hero-actions {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.language-switch {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(8, 15, 30, 0.52);
+}
+
+.language-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: #9fb1c8;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.language-button[data-active="true"] {
+  color: #04111f;
+  background: linear-gradient(135deg, #7dd3fc 0%, #86efac 100%);
+}
+
 .primary-button {
   border: 0;
   border-radius: 999px;
@@ -389,5 +420,14 @@ tbody tr:nth-child(even) {
   .hero {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .hero-actions {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .language-switch {
+    align-self: flex-start;
   }
 }
